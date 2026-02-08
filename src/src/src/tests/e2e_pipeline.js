@@ -13,7 +13,7 @@ CanonicalInput
   -> generateActionPolicy()
 */
 
-const { bindEvidence } = require("../index");
+const { bindEvidence } = require("../invariants");
 const { stabilizeMeaning } = require("../meaning");
 const { evaluateLaw } = require("../law");
 const { generateActionPolicy } = require("../action");
