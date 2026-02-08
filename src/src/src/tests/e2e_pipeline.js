@@ -34,7 +34,14 @@ function runE2E() {
   const ms1 = stabilizeMeaning(ev1, null);
   const lv1 = evaluateLaw(ms1);
   const ap1 = generateActionPolicy(lv1);
+  const { enforceSystemInvariants } = require("../src/invariants");
 
+enforceSystemInvariants({
+  evidenceUnit: ev1,
+  meaningState: ms1,
+  lawVerdict: lv1,
+  actionPolicy: ap1
+});
   // Basic structural assertions
   assert(ev1.type === "evidence_unit", "ev1.type");
   assert(ms1.type === "meaning_state", "ms1.type");
