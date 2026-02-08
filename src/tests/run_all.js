@@ -63,7 +63,13 @@ runTest("Replay Determinism Lock", () => {
 ===================================================== */
 
 section("ALL TESTS COMPLETED");
+const { generateEvidenceSeal } = require("../forensic/evidence_seal");
 
+try {
+  generateEvidenceSeal();
+} catch (err) {
+  console.error("Evidence seal failed:", err.message);
+}
 console.log("System integrity verified.");
 console.log("Deterministic pipeline execution confirmed.");
 console.log("No contract violations detected.");
