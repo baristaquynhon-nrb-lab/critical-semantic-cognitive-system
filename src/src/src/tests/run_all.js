@@ -37,7 +37,7 @@ function runTest(name, fn) {
 section("Loading Tests");
 
 const e2e = require("./e2e_pipeline");
-
+const { runReplayDeterminismLock } = require("./replay_determinism");
 /* =====================================================
    Execute Tests
 ===================================================== */
@@ -50,7 +50,14 @@ runTest("End-to-End Pipeline Test", () => {
     throw new Error("E2E pipeline did not return OK status");
   }
 });
+section("Executing Replay Determinism Lock (RDL-02)");
 
+runTest("Replay Determinism Lock", () => {
+  const result = runReplayDeterminismLock();
+  if (!result || result.status !== "PASS") {
+    throw new Error("Replay determinism lock failed");
+  }
+});
 /* =====================================================
    Final Report
 ===================================================== */
