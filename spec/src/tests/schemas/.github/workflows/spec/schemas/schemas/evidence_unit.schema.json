@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/evidence_unit.schema.json",
+  "title": "EvidenceUnit",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["type", "version", "input_hash", "canonical_json", "evidence_hash"],
+  "properties": {
+    "type": { "const": "evidence_unit" },
+    "version": { "type": "string", "pattern": "^v[0-9]+\\.[0-9]+$" },
+
+    "input_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "canonical_json": { "type": "object" },
+
+    "evidence_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+
+    "notes": { "type": ["string", "null"] }
+  }
+}
