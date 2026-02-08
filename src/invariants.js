@@ -1,8 +1,3 @@
-diff --git a/src/invariants.js b/src/invariants.js
-index 0000000..1111111 100644
---- a/src/invariants.js
-+++ b/src/invariants.js
-@@
 -"use strict";
 -
 -function assert(cond, msg) {
