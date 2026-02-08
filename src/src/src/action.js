@@ -47,11 +47,15 @@ function mapAction(verdict) {
 function generateActionPolicy(lawVerdict) {
   const { action, safety_level } = mapAction(lawVerdict.verdict);
 
-  const trace_hash = sha256({
-    verdict: lawVerdict.verdict,
-    action,
-    safety_level
-  });
+  const policyCore = { action, safety_level };
+
+const traceMaterial = {
+  meaning_fingerprint: lawVerdict.meaning_fingerprint,
+  law_verdict: lawVerdict.verdict,
+  policy_core: policyCore
+};
+
+const trace_hash = sha256(traceMaterial);
 
   return {
     type: "action_policy",
