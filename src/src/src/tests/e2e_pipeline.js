@@ -54,6 +54,17 @@ function runE2E() {
   assert(ap1.verdict === lv1.verdict, "ap1 binds to verdict");
   assert(typeof ap1.trace_hash === "string" && ap1.trace_hash.length === 64, "ap1.trace_hash");
 
+  // --------------------------------------------------
+// Invariant Enforcement (IEL)
+// --------------------------------------------------
+enforceInvariants({
+  canonicalize,
+  input: canonicalInput,
+  evidenceUnit: ev1,
+  meaningState: ms1,
+  lawVerdict: lv1
+});
+
   // Determinism check: same input should produce same hashes
   const ev2 = bindEvidence(canonicalInput);
   const ms2 = stabilizeMeaning(ev2, null);
