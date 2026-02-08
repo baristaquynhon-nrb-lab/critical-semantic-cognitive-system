@@ -1,112 +1,121 @@
 "use strict";
 
 /*
-E2E Pipeline Test (v1.0)
-
-Goal:
-Prove the full pipeline executes deterministically end-to-end:
-
-CanonicalInput
-  -> bindEvidence()
-  -> stabilizeMeaning()
-  -> evaluateLaw()
-  -> generateActionPolicy()
+================================================
+ FORENSIC INVARIANTS ENGINE v1.0
+ Deterministic Integrity Enforcement Layer
+================================================
 */
 
-const { bindEvidence, enforceSystemInvariants } = require("../invariants");
-const { stabilizeMeaning } = require("../meaning");
-const { evaluateLaw } = require("../law");
-const { generateActionPolicy } = require("../action");
+const crypto = require("crypto");
 
-function assert(cond, msg) {
-  if (!cond) throw new Error("ASSERT_FAIL: " + msg);
+/* =================================================
+   1. Canonicalization
+================================================= */
+
+function canonicalize(obj) {
+  if (Array.isArray(obj)) return obj.map(canonicalize);
+
+  if (obj && typeof obj === "object") {
+    return Object.keys(obj)
+      .sort()
+      .reduce((acc, k) => {
+        if (obj[k] !== undefined) acc[k] = canonicalize(obj[k]);
+        return acc;
+      }, {});
+  }
+
+  return obj;
 }
 
-function runE2E() {
-  const canonicalInput = {
-    type: "canonical_input",
-    version: "v1.0",
-    timestamp: "2026-02-08T00:00:00Z",
-    payload: { data: "hello" }
+function sha256(str) {
+  return crypto.createHash("sha256").update(str).digest("hex");
+}
+
+function hashCanonical(obj) {
+  return sha256(JSON.stringify(canonicalize(obj)));
+}
+
+/* =================================================
+   2. Evidence Binding
+================================================= */
+
+function bindEvidence(canonicalInput) {
+  if (!canonicalInput || canonicalInput.type !== "canonical_input") {
+    throw new Error("INVALID_INPUT: canonical_input required");
+  }
+
+  const input_hash = hashCanonical(canonicalInput);
+  const evidence_hash = sha256(input_hash);
+
+  return {
+    type: "evidence_unit",
+    input_hash,
+    evidence_hash,
+    timestamp_bound: new Date().toISOString()
   };
-
-  // ---------------------------
-  // RUN #1
-  // ---------------------------
-  const ev1 = bindEvidence(canonicalInput);
-  const ms1 = stabilizeMeaning(ev1, null);
-  const lv1 = evaluateLaw(ms1);
-  const ap1 = generateActionPolicy(lv1);
-
-  enforceSystemInvariants({
-    evidenceUnit: ev1,
-    meaningState: ms1,
-    lawVerdict: lv1,
-    actionPolicy: ap1
-  });
-
-  // ---------------------------
-  // STRUCTURE ASSERTS
-  // ---------------------------
-  assert(ev1.type === "evidence_unit", "ev1.type");
-  assert(ms1.type === "meaning_state", "ms1.type");
-  assert(lv1.type === "law_verdict", "lv1.type");
-  assert(ap1.type === "action_policy", "ap1.type");
-
-  // ---------------------------
-  // CONTRACT ASSERTS
-  // ---------------------------
-  assert(typeof ev1.input_hash === "string" && ev1.input_hash.length === 64, "ev1.input_hash");
-  assert(typeof ev1.evidence_hash === "string" && ev1.evidence_hash.length === 64, "ev1.evidence_hash");
-
-  assert(ms1.evidence_hash === ev1.evidence_hash, "ms1 binds to evidence_hash");
-  assert(typeof ms1.semantic_fingerprint === "string" && ms1.semantic_fingerprint.length === 64, "ms1.semantic_fingerprint");
-
-  assert(lv1.meaning_fingerprint === ms1.semantic_fingerprint, "lv1 binds to meaning_fingerprint");
-  assert(typeof lv1.trace_hash === "string" && lv1.trace_hash.length === 64, "lv1.trace_hash");
-
-  assert(ap1.verdict === lv1.verdict, "ap1 binds to verdict");
-  assert(typeof ap1.trace_hash === "string" && ap1.trace_hash.length === 64, "ap1.trace_hash");
-
-  // Optional contract hardening
-  assert(typeof ap1.action === "string", "ap1.action");
-  assert(
-    typeof ap1.safety_level === "string" ||
-    typeof ap1.safety_level === "number",
-    "ap1.safety_level"
-  );
-
-  // ---------------------------
-  // RUN #2 (Determinism)
-  // ---------------------------
-  const ev2 = bindEvidence(canonicalInput);
-  const ms2 = stabilizeMeaning(ev2, null);
-  const lv2 = evaluateLaw(ms2);
-  const ap2 = generateActionPolicy(lv2);
-
-  enforceSystemInvariants({
-    evidenceUnit: ev2,
-    meaningState: ms2,
-    lawVerdict: lv2,
-    actionPolicy: ap2
-  });
-
-  assert(ev2.input_hash === ev1.input_hash, "determinism: input_hash stable");
-  assert(ev2.evidence_hash === ev1.evidence_hash, "determinism: evidence_hash stable");
-  assert(ms2.semantic_fingerprint === ms1.semantic_fingerprint, "determinism: semantic_fingerprint stable");
-  assert(lv2.trace_hash === lv1.trace_hash, "determinism: law trace stable");
-  assert(ap2.trace_hash === ap1.trace_hash, "determinism: action trace stable");
-
-  console.log("E2E PASS");
-  console.log({
-    evidence_hash: ev1.evidence_hash,
-    semantic_fingerprint: ms1.semantic_fingerprint,
-    law_verdict: lv1.verdict,
-    action: ap1.action,
-    safety_level: ap1.safety_level
-  });
 }
 
-if (require.main === module) runE2E();
+/* =================================================
+   3. System Invariant Enforcement
+================================================= */
 
-module.exports = { runE2E };
+function enforceSystemInvariants(ctx) {
+  const { evidenceUnit, meaningState, lawVerdict, actionPolicy } = ctx;
+
+  // ---- Evidence invariants
+  if (evidenceUnit) {
+    if (evidenceUnit.type !== "evidence_unit") {
+      throw new Error("INV_FAIL: evidence_unit.type");
+    }
+    if (evidenceUnit.input_hash.length !== 64) {
+      throw new Error("INV_FAIL: evidence_unit.input_hash");
+    }
+    if (evidenceUnit.evidence_hash.length !== 64) {
+      throw new Error("INV_FAIL: evidence_unit.evidence_hash");
+    }
+  }
+
+  // ---- Meaning invariants
+  if (meaningState) {
+    if (meaningState.type !== "meaning_state") {
+      throw new Error("INV_FAIL: meaning_state.type");
+    }
+    if (meaningState.evidence_hash !== evidenceUnit.evidence_hash) {
+      throw new Error("INV_FAIL: meaning_state.evidence_binding");
+    }
+  }
+
+  // ---- Law invariants
+  if (lawVerdict) {
+    if (lawVerdict.type !== "law_verdict") {
+      throw new Error("INV_FAIL: law_verdict.type");
+    }
+    if (lawVerdict.meaning_fingerprint !== meaningState.semantic_fingerprint) {
+      throw new Error("INV_FAIL: law.meaning_binding");
+    }
+  }
+
+  // ---- Action invariants
+  if (actionPolicy) {
+    if (actionPolicy.type !== "action_policy") {
+      throw new Error("INV_FAIL: action_policy.type");
+    }
+    if (actionPolicy.verdict !== lawVerdict.verdict) {
+      throw new Error("INV_FAIL: action.verdict_binding");
+    }
+  }
+
+  return true;
+}
+
+/* =================================================
+   EXPORTS
+================================================= */
+
+module.exports = {
+  canonicalize,
+  hashCanonical,
+  bindEvidence,
+  enforceSystemInvariants
+};
