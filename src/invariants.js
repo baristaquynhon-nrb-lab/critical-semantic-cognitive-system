@@ -1,4 +1,4 @@
-"useeprstrict strict";
+"use eprstrict strict";
 
 function assert(cond, msg) {
   if (!cond) throw new Error("INVARIANT FAIL: " + msg);
