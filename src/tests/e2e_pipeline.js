@@ -13,7 +13,7 @@ CanonicalInput
   -> generateActionPolicy()
 */
 
-const { bindEvidence } = require("../invariants");
+const { bindEvidence, enforceSystemInvariants } = require("../invariants");
 const { stabilizeMeaning } = require("../meaning");
 const { evaluateLaw } = require("../law");
 const { generateActionPolicy } = require("../action");
@@ -30,25 +30,32 @@ function runE2E() {
     payload: { data: "hello" }
   };
 
+  // ---------------------------
+  // RUN #1
+  // ---------------------------
   const ev1 = bindEvidence(canonicalInput);
   const ms1 = stabilizeMeaning(ev1, null);
   const lv1 = evaluateLaw(ms1);
   const ap1 = generateActionPolicy(lv1);
-  const { enforceSystemInvariants } = require("../src/invariants");
 
-enforceSystemInvariants({
-  evidenceUnit: ev1,
-  meaningState: ms1,
-  lawVerdict: lv1,
-  actionPolicy: ap1
-});
-  // Basic structural assertions
+  enforceSystemInvariants({
+    evidenceUnit: ev1,
+    meaningState: ms1,
+    lawVerdict: lv1,
+    actionPolicy: ap1
+  });
+
+  // ---------------------------
+  // STRUCTURE ASSERTS
+  // ---------------------------
   assert(ev1.type === "evidence_unit", "ev1.type");
   assert(ms1.type === "meaning_state", "ms1.type");
   assert(lv1.type === "law_verdict", "lv1.type");
   assert(ap1.type === "action_policy", "ap1.type");
 
-  // Contract-like assertions
+  // ---------------------------
+  // CONTRACT ASSERTS
+  // ---------------------------
   assert(typeof ev1.input_hash === "string" && ev1.input_hash.length === 64, "ev1.input_hash");
   assert(typeof ev1.evidence_hash === "string" && ev1.evidence_hash.length === 64, "ev1.evidence_hash");
 
@@ -61,22 +68,28 @@ enforceSystemInvariants({
   assert(ap1.verdict === lv1.verdict, "ap1 binds to verdict");
   assert(typeof ap1.trace_hash === "string" && ap1.trace_hash.length === 64, "ap1.trace_hash");
 
-  // --------------------------------------------------
-// Invariant Enforcement (IEL)
-// --------------------------------------------------
-enforceInvariants({
-  canonicalize,
-  input: canonicalInput,
-  evidenceUnit: ev1,
-  meaningState: ms1,
-  lawVerdict: lv1
-});
+  // Optional contract hardening
+  assert(typeof ap1.action === "string", "ap1.action");
+  assert(
+    typeof ap1.safety_level === "string" ||
+    typeof ap1.safety_level === "number",
+    "ap1.safety_level"
+  );
 
-  // Determinism check: same input should produce same hashes
+  // ---------------------------
+  // RUN #2 (Determinism)
+  // ---------------------------
   const ev2 = bindEvidence(canonicalInput);
   const ms2 = stabilizeMeaning(ev2, null);
   const lv2 = evaluateLaw(ms2);
   const ap2 = generateActionPolicy(lv2);
+
+  enforceSystemInvariants({
+    evidenceUnit: ev2,
+    meaningState: ms2,
+    lawVerdict: lv2,
+    actionPolicy: ap2
+  });
 
   assert(ev2.input_hash === ev1.input_hash, "determinism: input_hash stable");
   assert(ev2.evidence_hash === ev1.evidence_hash, "determinism: evidence_hash stable");
