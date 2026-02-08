@@ -13,10 +13,10 @@ CanonicalInput
   -> generateActionPolicy()
 */
 
-const { bindEvidence } = require("../src/index");
-const { stabilizeMeaning } = require("../src/meaning");
-const { evaluateLaw } = require("../src/law");
-const { generateActionPolicy } = require("../src/action");
+const { bindEvidence } = require("../index");
+const { stabilizeMeaning } = require("../meaning");
+const { evaluateLaw } = require("../law");
+const { generateActionPolicy } = require("../action");
 
 function assert(cond, msg) {
   if (!cond) throw new Error("ASSERT_FAIL: " + msg);
